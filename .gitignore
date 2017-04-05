@@ -1,6 +1,7 @@
-node_modules/
-vendor/
 bower_components/
+build/
+node_modules
+vendor
 
 .DS_Store
 .idea/

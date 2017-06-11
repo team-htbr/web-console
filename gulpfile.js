@@ -19,9 +19,9 @@ const polymerBuild = require('polymer-build');
 const HtmlSplitter = require('polymer-build').HtmlSplitter;
 
 const swPrecacheConfig = require('./sw-precache-config.js');
-const polymerJson = require('./polymer.json');
-const polymerProject = new polymerBuild.PolymerProject(polymerJson);
-const buildDirectory = 'build';
+const PolymerProject = require('polymer-build').PolymerProject;
+const project = new PolymerProject(require('./polymer.json'));
+const buildDirectory = 'build/';
 
 /**
  * New things
@@ -53,7 +53,7 @@ function build() {
     del([buildDirectory])
       .then(() => {
 		const sourcesHtmlSplitter = new HtmlSplitter();
-        const sourcesStream = polymerProject.sources()
+        const sourcesStream = project.sources()
           .pipe(sourcesHtmlSplitter.split())
           .pipe(gulpif(/\.js$/, babel({
             presets: ['es2015']
@@ -65,7 +65,7 @@ function build() {
           .pipe(sourcesHtmlSplitter.rejoin());
 
         const dependeciesHtmlSplitter = new HtmlSplitter();
-        const dependenciesStream = polymerProject.dependencies()
+        const dependenciesStream = project.dependencies()
           .pipe(dependeciesHtmlSplitter.split())
           .pipe(gulpif(/\.js$/, uglify()))
           // .pipe(gulpif(/\.css$/, cssSlam()))
@@ -81,7 +81,7 @@ function build() {
         // If you want bundling, pass the stream to polymerProject.bundler.
         // This will bundle dependencies into your fragments so you can lazy
         // load them.
-        buildStream = buildStream.pipe(polymerProject.bundler);
+        buildStream = buildStream.pipe(project.bundler);
 
         // Okay, time to pipe to the build directory
         buildStream = buildStream.pipe(gulp.dest(buildDirectory));

@@ -16,6 +16,7 @@ const gulpif = require('gulp-if');
 const imagemin = require('gulp-imagemin');
 const mergeStream = require('merge-stream');
 const polymerBuild = require('polymer-build');
+const HtmlSplitter = require('polymer-build').HtmlSplitter;
 
 const swPrecacheConfig = require('./sw-precache-config.js');
 const polymerJson = require('./polymer.json');
@@ -25,10 +26,7 @@ const buildDirectory = 'build';
 /**
  * New things
  */
-// const gutil = require('gulp-util');
 const babel = require('gulp-babel');
-// const jshint = require('gulp-jshint');
-// const browserify = require('gulp-browserify');
 const uglify = require('gulp-uglify');
 const browserSync = require('browser-sync').create();
 
@@ -48,16 +46,15 @@ function waitFor(stream) {
 }
 
 function build() {
-  return new Promise((resolve, reject) => { // eslint-disable-line no-unused-vars
-    // Okay, so first thing we do is clear the build directory
+  return new Promise((resolve, reject) => {
+
     console.log(`Deleting ${buildDirectory} directory...`);
+
     del([buildDirectory])
       .then(() => {
-        // Okay, now let's get your source files
-        let sourcesStream = polymerProject.sources()
-          // Oh, well do you want to minify stuff? Go for it!
-          // Here's how splitHtml & gulpif work
-          .pipe(polymerProject.splitHtml())
+		const sourcesHtmlSplitter = new HtmlSplitter();
+        const sourcesStream = polymerProject.sources()
+          .pipe(sourcesHtmlSplitter.split())
           .pipe(gulpif(/\.js$/, babel({
             presets: ['es2015']
           })))
@@ -65,15 +62,15 @@ function build() {
           // .pipe(gulpif(/\.css$/, cssSlam()))
           // .pipe(gulpif(/\.html$/, htmlMinifier()))
           .pipe(gulpif(/\.(png|gif|jpg|svg)$/, imagemin()))
-          .pipe(polymerProject.rejoinHtml());
+          .pipe(sourcesHtmlSplitter.rejoin());
 
-        // Okay, now let's do the same to your dependencies
-        let dependenciesStream = polymerProject.dependencies()
-          .pipe(polymerProject.splitHtml())
-          // .pipe(gulpif(/\.js$/, uglify()))
+        const dependeciesHtmlSplitter = new HtmlSplitter();
+        const dependenciesStream = polymerProject.dependencies()
+          .pipe(dependeciesHtmlSplitter.split())
+          .pipe(gulpif(/\.js$/, uglify()))
           // .pipe(gulpif(/\.css$/, cssSlam()))
           // .pipe(gulpif(/\.html$/, htmlMinifier()))
-          .pipe(polymerProject.rejoinHtml());
+          .pipe(dependeciesHtmlSplitter.rejoin());
 
         // Okay, now let's merge them into a single build stream
         let buildStream = mergeStream(sourcesStream, dependenciesStream)
